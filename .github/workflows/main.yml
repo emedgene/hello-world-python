@@ -1,0 +1,45 @@
+on:
+  push:
+    tags:
+      - '*'
+
+name: Build & Push image - Dev
+
+jobs:
+
+  build-and-push-image:
+    name: Build and push image - Dev
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2.3.3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+      - name: Set version from tag
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      - name: Write VERSION file
+        id: write-versionf
+        run: echo ${{ steps.vars.outputs.tag }} > server/VERSION
+      - name: AWS Credentials - Dev
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ECR_DEV_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_ECR_DEV_SECRET_KEY }}
+          aws-region: ${{ secrets.AWS_ECR_DEV_REGION }}
+      - name: Login to Amazon ECR - Dev
+        id: login-ecr-dev
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and push Docker image - Dev & Prod
+        env:
+          ECR_REGISTRY_DEV: ${{ steps.login-ecr-dev.outputs.registry }}
+          ECR_REPOSITORY_DEV: ${{ secrets.ECR_REPO_NAME }}
+          IMAGE_TAG: ${{ steps.vars.outputs.tag }}
+        run: |
+          docker build \
+            -t $ECR_REGISTRY_DEV/$ECR_REPOSITORY_DEV:$IMAGE_TAG \
+            -f Dockerfile .
+          docker push $ECR_REGISTRY_DEV/$ECR_REPOSITORY_DEV:$IMAGE_TAG
