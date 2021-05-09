@@ -22,7 +22,7 @@ jobs:
         run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
       - name: Write VERSION file
         id: write-versionf
-        run: echo ${{ steps.vars.outputs.tag }} > server/VERSION
+        run: echo ${{ steps.vars.outputs.tag }} > VERSION
       - name: AWS Credentials - Dev
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -33,7 +33,7 @@ jobs:
         id: login-ecr-dev
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build and push Docker image - Dev & Prod
+      - name: Build and push Docker image - Dev
         env:
           ECR_REGISTRY_DEV: ${{ steps.login-ecr-dev.outputs.registry }}
           ECR_REPOSITORY_DEV: ${{ secrets.ECR_REPO_NAME }}
